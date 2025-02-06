@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
 });//fim do DOMContentLoaded
 
- async function renderCards(action){
+async function renderCards(action){
     let pageQuantity = pastEvents.length/6
     
     
@@ -103,7 +103,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById(`activeCard${index}`).style.display = "flex";
     document.getElementById(`createIcon${index}`).style.display = "none"
     }
-    
+    if(pastEvents.length < 7){
+        document.getElementById("next").disabled = true;
+    }
     switch(action){
         case 0:
         if(page==1 ){
@@ -112,11 +114,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById("back").disabled = true;
             page = page-1
         }
+        
         else{
             page = page -1;
+            document.getElementById("next").disabled = false;
         }
-        document.getElementById("next").disabled = false;
-        if(pastEvents.length ==0 ){
+        
+        if(pastEvents.length ==0){
             document.getElementById("next").disabled = true;
         }
         break;
@@ -248,7 +252,7 @@ async function renderPastCard(index, organizerId) {
         
             
             <textarea readonly style="resize: none;width: 90%;height:15%;display:flex" 
-                  id="comment" name="description" required maxlength="500">${pastEvents[index].description}</textarea>
+                  id="description" name="description" required maxlength="500">${pastEvents[index].description}</textarea>
                   <a style="color: black; font-size:2rem" href="../html/userInfo.html?id=${organizerData.id}&name=${organizerData.name}">${organizerData.name}</a>
         <p>${pastEvents[index].event_type}</p>
         <div class="divide">
@@ -263,9 +267,9 @@ async function renderPastCard(index, organizerId) {
     console.log("Card atualizado com sucesso!");
 }
 async function renderActiveCard(button) {
-    const values = JSON.parse(button.value); // Converte string JSON para array
-    const index = values[0]; // Obtém o índice correto
-    const organizerId = values[1]; // Obtém o ID do organizador
+    const values = JSON.parse(button.value);
+    const index = values[0];
+    const organizerId = values[1];
 
     if (!activeEvents[index]) {
         console.error(`Erro: Evento não encontrado no índice ${index}`);
@@ -273,91 +277,35 @@ async function renderActiveCard(button) {
     }
 
     const cepData = await cepSearch(activeEvents[index].CEP);
-    const data = activeEvents[index].event_date.slice(0, -14);
-    const partes = data.split("-");
-
     const participantsData = await participantsQuantity(activeEvents[index].id);
+    const data = activeEvents[index].event_date.split("T")[0];
+    const imageUrl = `http://localhost:3000/eventImage/${activeEvents[index].id}`;
 
-    if (organizerId != userData.id) { // Verifica se o usuário é o organizador
-        const userIdResponse = await fetch(`http://localhost:3000/userId?id=${organizerId}`);
-        if (!userIdResponse.ok) {
-            throw new Error(`Erro: ${userIdResponse.statusText}`);
-        }
-        const organizerData = await userIdResponse.json();
-        console.log(activeEvents[index].id)
-        const imageUrl = `http://localhost:3000/eventImage/${activeEvents[index].id}`;
-        
-        document.getElementById(`card`).innerHTML = `
-        <button onclick="closeCards()">fechar</button>
-            <h3 id="activeName0">${activeEvents[index].name}</h3>
-            <img style="width:80%;" src="${imageUrl}" alt="Sua Foto">
-
-            <textarea readonly style="resize: none;width: 90%;height:15%;display:flex" 
-                  id="comment" name="description" required maxlength="500">${activeEvents[index].description}</textarea>
-                  <a style="color: black; font-size:2rem" href="../html/userInfo.html?id=${organizerData.id}&name=${organizerData.name}">${organizerData.name}</a>
-            <p>${activeEvents[index].event_type}</p>
-            <div class="divide">
-                <p id="activeDate0"><strong>Data:</strong> ${partes[2]}/${partes[1]}/${partes[0]}</p>
-                <p id="activeTime0"><strong>Hora:</strong> ${activeEvents[index].event_time.slice(0, -3)}</p>
-            </div>
-            <p>Participantes: ${participantsData.participants}/${activeEvents[index].participants}</p>
-            <a href="https://api.whatsapp.com/send?phone=55${activeEvents[index].phone_number.replace(/[()]/g, "").trim()}">Entrar em contato</a>
-            <p id="activeAddress0"><strong>Endereço:</strong> ${cepData.bairro} - ${cepData.localidade} - ${cepData.uf}</p>
-            <button onclick="deleteUserEvent(${index})">Sair</button>
-        `;
-        console.log("Você não é o dono deste evento.");
-    } else {
-        const formatDate = (dateString) => {
-            const date = new Date(dateString);
-            return date.toISOString().split('T')[0]; // Retorna no formato "YYYY-MM-DD"
-        };
-        
-        // Converter o horário para o formato esperado pelo `<input type="time">`
-        const formatTime = (timeString) => {
-            const [hours, minutes] = timeString.split(':');
-            return `${hours}:${minutes}`; // Retorna no formato "HH:MM"
-        };
-        
-        // Construindo o innerHTML com os valores interpolados
-        document.getElementById(`card`).innerHTML = `
-            <form id="editForm" enctype="multipart/form-data">
-                
-                <label for="name">Nome do Evento:</label>
-                <input type="text" id="name" name="name" placeholder="Digite o nome do evento" value="${activeEvents[index].name}" required>
-                
-                <label for="description">Descrição:</label>
-                <textarea id="description" name="description" placeholder="Digite a descrição do evento" required>${activeEvents[index].description}</textarea>
-                
-                <label for="event_type">Tipo de Evento:</label>
-                <select id="event_type" name="event_type" required>
-                    <option value="" disabled ${activeEvents[index].event_type ? "selected" : ""}>Selecione o tipo do evento</option>
-                    <option value="Encontro social" ${activeEvents[index].event_type === "Encontro social" ? "selected" : ""}>Encontro social</option>
-                    <option value="Rodas de Apoio" ${activeEvents[index].event_type === "Rodas de Apoio" ? "selected" : ""}>Rodas de Apoio</option>
-                    <option value="Geek" ${activeEvents[index].event_type === "Geek" ? "selected" : ""}>Geek</option>
-                    <option value="Cultural" ${activeEvents[index].event_type === "Cultural" ? "selected" : ""}>Cultural</option>
-                </select>
-                
-                <label for="participants">Número de Participantes:</label>
-                <input type="number" id="participants" name="participants" placeholder="Digite o número de participantes" min="2" value="${activeEvents[index].participants}" required>
-                
-                <label for="event_date">Data do Evento:</label>
-                <input type="date" id="event_date" name="event_date" value="${formatDate(activeEvents[index].event_date)}" required>
-                
-                <label for="event_time">Horário do Evento:</label>
-                <input type="time" id="event_time" name="event_time" value="${formatTime(activeEvents[index].event_time)}" required>
-                
-                <label for="cep">CEP:</label>
-                <input type="text" id="cep" name="cep" placeholder="Digite o CEP" maxlength="9" pattern="[0-9]{5}-[0-9]{3}" title="Digite o CEP no formato 12345-678" value="${activeEvents[index].CEP}" required>
-                
-                <label for="phone_number">Telefone:</label>
-                <input type="text" id="phone_number" name="phone_number" placeholder="Digite o telefone" maxlength="15" pattern="^\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}$" title="Digite um número de telefone válido com DDD (ex: (51) 99776-7055)" value="${activeEvents[index].phone_number}" required>
-                
-                <button type="submit">Confirmar Edição</button>
-            </form>
-
-            <button id="deleteButton" value="${activeEvents[index].id}" onclick="deleteEvent(${activeEvents[index].id})"> Excluir evento </button>
-        `;
+    let organizerName = "";
+    if (organizerId !== userData.id) {
+        const organizerData = await (await fetch(`http://localhost:3000/userId?id=${organizerId}`)).json();
+        organizerName = `<a style="color: black; font-size:2rem" href="../html/userInfo.html?id=${organizerData.id}&name=${organizerData.name}">${organizerData.name}</a>`;
     }
+
+    document.getElementById(`card`).innerHTML = `
+        <button onclick="closeCards()">fechar</button>
+        <h3 id="activeName0">${activeEvents[index].name}</h3>
+        <img style="width:80%;" src="${imageUrl}" alt="Sua Foto">
+        <textarea readonly style="resize: none;width: 90%;height:15%;display:flex" id="description" name="description" maxlength="500">${activeEvents[index].description}</textarea>
+        ${organizerName}
+        <p>${activeEvents[index].event_type}</p>
+        <div class="divide">
+            <p><strong>Data:</strong> ${data.split("-").reverse().join("/")}</p>
+            <p><strong>Hora:</strong> ${activeEvents[index].event_time.slice(0, -3)}</p>
+        </div>
+        <p>Participantes: ${participantsData.participants}/${activeEvents[index].participants}</p>
+        <a href="https://api.whatsapp.com/send?phone=55${activeEvents[index].phone_number.replace(/[()]/g, "").trim()}">Entrar em contato</a>
+        <p><strong>Endereço:</strong> ${cepData.bairro} - ${cepData.localidade} - ${cepData.uf}</p>
+        ${organizerId === userData.id ? `
+            <button onclick="redirect(${activeEvents[index].id})">Editar</button>
+            <button onclick="deleteEvent(${activeEvents[index].id})">Excluir</button>
+        ` : `<button onclick="deleteUserEvent(${index})">Sair</button>`}
+    `;
 }
 
 async function cepSearch(cep){
@@ -420,7 +368,8 @@ async function participantsQuantity(groupId){
         },
         body: JSON.stringify({ eventId: id }), // Corpo da requisição enviado como JSON
       });
-    console.log(document.getElementById("deleteButton").value)
+    
+    location.reload()
   }
   async function deleteUserEvent(eventIndex) {
     
@@ -614,4 +563,7 @@ async function fetchUserImage(userId) {
 }
 function closeCards(){
     location.reload();
+}
+function redirect(eventId){
+    window.location.href = `eventCreation.html?eventId=${eventId}`;
 }

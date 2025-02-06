@@ -28,10 +28,10 @@
                 <p class="upload-text">Clique para adicionar sua foto</p>
             </div>
 
-            <input type="text" id="name" name="name" class="input" placeholder="Nome completo" required>
-            <input type="number" id="age" name="age" class="input" placeholder="Idade" min="18" required>
+            <input type="text" id="name" name="name" class="input" placeholder="Nome completo" required maxlength="100">
+            <input type="number" id="age" name="age" class="input" placeholder="Idade" min="18" required maxlength="100" max="120">
             <input type="text" id="contact" name="contact" class="input" placeholder="Email ou telefone" required>
-            <input type="password" id="password" name="password" class="input" placeholder="Senha" required>
+            <input type="password" id="password" name="password" class="input" placeholder="Senha" required maxlength="100">
             
             <button type="submit">Registrar</button>
         </form>

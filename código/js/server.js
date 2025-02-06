@@ -334,15 +334,26 @@ app.delete('/leaveEvent', async (req, res) => {
   }
 });
 
-app.put('/editEvent', authenticateToken, async (req, res) => {
-  const { newName, newDescription, newEvent_Type, newParticipants, newEvent_Date, newEvent_Time, newCep, newPhoneNumber, event_id } = req.body;  // Obtém o novo email e a nova senha
-  
+app.put('/editEvent', authenticateToken, upload.single('image'), async (req, res) => {
+  const { newName, newDescription, newEvent_Type, newParticipants, newEvent_Date, newEvent_Time, newCep, newPhoneNumber, event_id } = req.body;
+  const imageBuffer = req.file ? req.file.buffer : null;
 
-  // Atualiza o email e senha do usuário
-  db.query('UPDATE events SET name = ?, description = ?, event_type = ?, participants = ?, event_date = ?, event_time = ?, CEP = ?, phone_number = ? WHERE id = ?', [newName, newDescription, newEvent_Type, newParticipants, newEvent_Date, newEvent_Time, newCep, newPhoneNumber, event_id], (err, result) => {
+  // Monta a query e os valores dinamicamente
+  let query = 'UPDATE events SET name = ?, description = ?, event_type = ?, participants = ?, event_date = ?, event_time = ?, CEP = ?, phone_number = ?';
+  let values = [newName, newDescription, newEvent_Type, newParticipants, newEvent_Date, newEvent_Time, newCep, newPhoneNumber];
+  
+  if (imageBuffer) {
+    query += ', image = ?';
+    values.push(imageBuffer);
+  }
+  
+  query += ' WHERE id = ?';
+  values.push(event_id);
+
+  // Executa a query
+  db.query(query, values, (err, result) => {
     if (err) throw err;
 
-    // Verifica se a atualização foi bem-sucedida
     if (result.affectedRows === 0) {
       return res.status(404).send('Evento não encontrado');
     }
